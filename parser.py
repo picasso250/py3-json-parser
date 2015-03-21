@@ -42,6 +42,7 @@ class Lexer(object):
                         self.state == 'string'
                         return self.match_string()
                 self.token += lh
+                print(self.token)
     def match_string(self):
         self.token = ''
         while True:
@@ -52,6 +53,7 @@ class Lexer(object):
             if lh == '"':
                 js = JsonString(self.token)
                 self.token = ''
+                self.state = 'normal'
                 return js
             if lh == '\\':
                 self.token += lh
@@ -67,7 +69,7 @@ class Lexer(object):
         self.back()
         token = self.token
         self.token = ''
-        return self.token
+        return token
     def back(self):
         self.i -= 1
     def lookahead(self):
@@ -98,6 +100,11 @@ def stmt():
 
 if __name__ == '__main__':
     s = '{"hello":"world"}'
+    lex = Lexer(s)
+    tl = lex.analyze()
+    print(tl)
+
+    s = '[3.2,4,null,false]'
     lex = Lexer(s)
     tl = lex.analyze()
     print(tl)
