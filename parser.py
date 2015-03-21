@@ -66,10 +66,19 @@ class Lexer(object):
             # print(self.token)
 
     def current_token(self):
+        # current token must be a number
         self.back()
         token = self.token
         self.token = ''
-        return token
+        first = token[0]
+        if first == '-' or first.isdigit():
+            return self.match_number(token)
+        else:
+            return token
+    def match_number(self, token):
+        if '.' in token or 'e' in token or 'E' in token:
+            return float(token)
+        return int(token)
     def back(self):
         self.i -= 1
     def lookahead(self):
@@ -83,20 +92,44 @@ class Lexer(object):
             return False
         return True
 
-# spaces between lookahead and nextTerminal should be ignored
-def stmt():
-    if lookahead == '{':
-        while nextTerminal == '"':
-            # match_pair()
-            match_str()
-            match(':')
-            match_value()
-    if lookahead == '[':
-        # match elements
-        while nextTerminal != ']':
-            match_value()
-    if lookahead == '"':
-        match_str()
+class Grammar(object):
+    """docstring for Grammar"""
+    def __init__(self, token_list):
+        super(Grammar, self).__init__()
+        self.token_list = token_list
+    def stmt():
+        value = None
+        # todo spaces between lookahead and nextTerminal should be ignored
+        lookahead = self.lookahead()
+        if lookahead == '{':
+            if value is None:
+                value = {}
+            while nextTerminal != ']':
+                k,v = match_pair()
+                value.update(k, v)
+            match(')')
+            return value
+        if lookahead == '[':
+            # match elements
+            while nextTerminal != ']':
+                match_value()
+            match(']')
+            return value
+        if lookahead == '"':
+            match_string()
+    def match_pair(self):
+        match_string()
+        match(':')
+        match_value()
+    def step(self):
+        self.i += 1
+        if self.i >= self.n:
+            return False
+        return True
+    def lookahead(self):
+        lh = self.s[self.i]
+        # print(lh)
+        return lh
 
 if __name__ == '__main__':
     s = '{"hello":"world"}'
