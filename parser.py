@@ -105,36 +105,42 @@ class Grammar(object):
         self.i = 0
     def analyze(self):
         return self.match_value()
+    # | value
     def match_value(self):
         # todo spaces between lookahead and self.nextTerminal() should be ignored
         lookahead = self.lookahead()
-        print(lookahead)
         if lookahead == '{':
-            self.step()
+            self.match('{')
             value = {}
-            while self.nextTerminal() != ']':
+            while self.lookahead() != '}':
                 k,v = self.match_pair()
-                value.update(k, v)
-            self.match('}')
-            return value
+                value[k] = v
+                if self.lookahead() == '}':
+                    self.match('}')
+                    return value
+                else:
+                    self.match(',')
+            raise Exception('impossible')
         if lookahead == '[':
-            self.step()
+            self.match('[')
             # self.match elements
             value = []
-            while self.nextTerminal() != ']':
-                v = match_value()
+            while self.lookahead() != ']':
+                v = self.match_value()
                 value.append(v)
-                if self.nextTerminal() == ']':
+                if self.lookahead() == ']':
                     self.match(']')
-                    return v
+                    return value
                 else:
                     self.match(',')
             return value
         if isinstance(lookahead, JsonString):
-            return lookahead.value()
+            return self.match_string()
         if isinstance(lookahead, int) or isinstance(lookahead, float):
+            self.step()
             return lookahead
         if isinstance(lookahead, str):
+            self.step()
             if lookahead == 'true':
                 return True
             elif lookahead == 'false':
@@ -145,20 +151,24 @@ class Grammar(object):
                 raise Exception('unkonwn token {}'.format(lookahead))
         raise Exception('unkonwn token type {}'.format(type(lookahead)))
     def match(self, token):
+        print('match', self.lookahead(), token)
         if self.lookahead() == token:
             self.step()
-        raise Exception('unmatch {}'.format(token))
+        else:
+            raise Exception('unmatch {}'.format(token))
+    # { "" | :
     def match_pair(self):
         k = self.match_string()
         self.match(':')
         v = self.match_value()
         return k,v
+    # "" |
     def match_string(self):
-        lookahead = self.lookahead()
-        if isinstance(lookahead, JsonString):
+        s = self.lookahead()
+        if isinstance(s, JsonString):
             self.step()
-            return lookahead.value()
-        raise Exception('unkonwn token type {}'.format(type(lookahead)))
+            return s.value()
+        raise Exception('unkonwn token type {}'.format(type(s)))
     def step(self):
         self.i += 1
         if self.i >= self.n:
@@ -183,24 +193,21 @@ class JsonFormat(object):
         return self.repr_value(self.tree)
     def repr_value(self, value):
         if isinstance(value, list):
-            print(2)
             return '[{}]'.format([self.repr_value(v) for v in value])
         if isinstance(value, dict):
-            print(3)
-            return '{{}}'.format([self.repr_string(k)+':'+self.repr_value(v) for v in value.items()])
+            return '{{}}'.format([str(k)+':'+self.repr_value(v) for (k,v) in value.items()])
         if isinstance(value, str):
-            print(4)
             return '"{}"'.format(value)
         return str(value)
 
 if __name__ == '__main__':
-    # s = 'true'
-    # lex = Lexer(s)
-    # tl = lex.analyze()
-    # print(tl)
-    # g = Grammar(tl)
-    # tree = g.analyze()
-    # print(JsonFormat(tree))
+    s = 'true'
+    lex = Lexer(s)
+    tl = lex.analyze()
+    print(tl)
+    g = Grammar(tl)
+    tree = g.analyze()
+    print(tree)
 
     s = '{"hello":"world"}'
     lex = Lexer(s)
@@ -208,9 +215,9 @@ if __name__ == '__main__':
     print(tl)
     g = Grammar(tl)
     tree = g.analyze()
-    print(JsonFormat(tree))
+    print(tree)
 
-    s = '[3.2,4,null,false]'
-    lex = Lexer(s)
-    tl = lex.analyze()
-    print(tl)
+    # s = '[3.2,4,null,false]'
+    # lex = Lexer(s)
+    # tl = lex.analyze()
+    # print(tl)
