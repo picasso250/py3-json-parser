@@ -28,6 +28,8 @@ class Lexer(object):
         if self.state == 'normal':
             while True:
                 if not self.step():
+                    if len(self.token) > 0:
+                        return self.current_token()
                     return None
                 lh = self.lookahead()
                 if lh == '{' or lh == '}' or lh == '[' or lh == ']' or lh == ',' or lh == ':':
@@ -170,23 +172,32 @@ class JsonFormat(object):
         return self.repr_value(self.tree)
     def repr_value(self, value):
         if isinstance(value, list):
+            print(2)
             return '[{}]'.format([self.repr_value(v) for v in value])
         if isinstance(value, dict):
+            print(3)
             return '{{}}'.format([self.repr_string(k)+':'+self.repr_value(v) for v in value.items()])
         if isinstance(value, str):
+            print(4)
             return '"{}"'.format(value)
         return str(value)
-def repr_tree():
-    pass
 
 if __name__ == '__main__':
+    s = 'true'
+    lex = Lexer(s)
+    tl = lex.analyze()
+    print(tl)
+    g = Grammar(tl)
+    tree = g.analyze()
+    print(JsonFormat(tree))
+
     s = '{"hello":"world"}'
     lex = Lexer(s)
     tl = lex.analyze()
     print(tl)
     g = Grammar(tl)
     tree = g.analyze()
-    print(tree)
+    print(JsonFormat(tree))
 
     s = '[3.2,4,null,false]'
     lex = Lexer(s)
