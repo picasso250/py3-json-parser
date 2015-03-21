@@ -5,6 +5,9 @@ class JsonString(object):
         super(JsonString, self).__init__()
         self.string = string
     def __repr__(self):
+        return '"{}"'.format(self.string)
+    def value(self):
+        # fix
         return self.string
         
 class Lexer(object):
@@ -99,30 +102,33 @@ class Grammar(object):
         super(Grammar, self).__init__()
         self.token_list = token_list
         self.n = len(token_list)
-        self.i = -1
+        self.i = 0
     def analyze(self):
-        return self.match_value
+        return self.match_value()
     def match_value(self):
         # todo spaces between lookahead and self.nextTerminal() should be ignored
         lookahead = self.lookahead()
+        print(lookahead)
         if lookahead == '{':
+            self.step()
             value = {}
             while self.nextTerminal() != ']':
-                k,v = match_pair()
+                k,v = self.match_pair()
                 value.update(k, v)
-            match(')')
+            self.match('}')
             return value
         if lookahead == '[':
-            # match elements
+            self.step()
+            # self.match elements
             value = []
             while self.nextTerminal() != ']':
                 v = match_value()
                 value.append(v)
                 if self.nextTerminal() == ']':
-                    match(']')
+                    self.match(']')
                     return v
                 else:
-                    match(',')
+                    self.match(',')
             return value
         if isinstance(lookahead, JsonString):
             return lookahead.value()
@@ -138,10 +144,15 @@ class Grammar(object):
             else:
                 raise Exception('unkonwn token {}'.format(lookahead))
         raise Exception('unkonwn token type {}'.format(type(lookahead)))
+    def match(self, token):
+        if self.lookahead() == token:
+            self.step()
+        raise Exception('unmatch {}'.format(token))
     def match_pair(self):
-        k = match_string()
-        match(':')
-        v = match_value()
+        k = self.match_string()
+        self.match(':')
+        v = self.match_value()
+        return k,v
     def match_string(self):
         lookahead = self.lookahead()
         if isinstance(lookahead, JsonString):
@@ -183,13 +194,13 @@ class JsonFormat(object):
         return str(value)
 
 if __name__ == '__main__':
-    s = 'true'
-    lex = Lexer(s)
-    tl = lex.analyze()
-    print(tl)
-    g = Grammar(tl)
-    tree = g.analyze()
-    print(JsonFormat(tree))
+    # s = 'true'
+    # lex = Lexer(s)
+    # tl = lex.analyze()
+    # print(tl)
+    # g = Grammar(tl)
+    # tree = g.analyze()
+    # print(JsonFormat(tree))
 
     s = '{"hello":"world"}'
     lex = Lexer(s)
