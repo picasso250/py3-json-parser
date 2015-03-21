@@ -42,14 +42,13 @@ class Lexer(object):
                         self.state == 'string'
                         return self.match_string()
                 self.token += lh
-                print(self.token)
+                # print(self.token)
     def match_string(self):
         self.token = ''
         while True:
             if not self.step():
                 raise Exception('no end of string')
             lh = self.lookahead()
-            print(lh)
             if lh == '"':
                 js = JsonString(self.token)
                 self.token = ''
@@ -97,45 +96,97 @@ class Grammar(object):
     def __init__(self, token_list):
         super(Grammar, self).__init__()
         self.token_list = token_list
-    def stmt():
-        value = None
-        # todo spaces between lookahead and nextTerminal should be ignored
+        self.n = len(token_list)
+        self.i = -1
+    def analyze(self):
+        return self.match_value
+    def match_value(self):
+        # todo spaces between lookahead and self.nextTerminal() should be ignored
         lookahead = self.lookahead()
         if lookahead == '{':
-            if value is None:
-                value = {}
-            while nextTerminal != ']':
+            value = {}
+            while self.nextTerminal() != ']':
                 k,v = match_pair()
                 value.update(k, v)
             match(')')
             return value
         if lookahead == '[':
             # match elements
-            while nextTerminal != ']':
-                match_value()
-            match(']')
+            value = []
+            while self.nextTerminal() != ']':
+                v = match_value()
+                value.append(v)
+                if self.nextTerminal() == ']':
+                    match(']')
+                    return v
+                else:
+                    match(',')
             return value
-        if lookahead == '"':
-            match_string()
+        if isinstance(lookahead, JsonString):
+            return lookahead.value()
+        if isinstance(lookahead, int) or isinstance(lookahead, float):
+            return lookahead
+        if isinstance(lookahead, str):
+            if lookahead == 'true':
+                return True
+            elif lookahead == 'false':
+                return False
+            elif lookahead == 'null':
+                return None
+            else:
+                raise Exception('unkonwn token {}'.format(lookahead))
+        raise Exception('unkonwn token type {}'.format(type(lookahead)))
     def match_pair(self):
-        match_string()
+        k = match_string()
         match(':')
-        match_value()
+        v = match_value()
+    def match_string(self):
+        lookahead = self.lookahead()
+        if isinstance(lookahead, JsonString):
+            self.step()
+            return lookahead.value()
+        raise Exception('unkonwn token type {}'.format(type(lookahead)))
     def step(self):
         self.i += 1
         if self.i >= self.n:
             return False
         return True
     def lookahead(self):
-        lh = self.s[self.i]
+        lh = self.token_list[self.i]
         # print(lh)
         return lh
+    def nextTerminal(self):
+        i = self.i + 1
+        if i >= self.n:
+            return None
+        return self.token_list[i]
+
+class JsonFormat(object):
+    """docstring for JsonFormat"""
+    def __init__(self, tree):
+        super(JsonFormat, self).__init__()
+        self.tree = tree
+    def __repr__(self):
+        return self.repr_value(self.tree)
+    def repr_value(self, value):
+        if isinstance(value, list):
+            return '[{}]'.format([self.repr_value(v) for v in value])
+        if isinstance(value, dict):
+            return '{{}}'.format([self.repr_string(k)+':'+self.repr_value(v) for v in value.items()])
+        if isinstance(value, str):
+            return '"{}"'.format(value)
+        return str(value)
+def repr_tree():
+    pass
 
 if __name__ == '__main__':
     s = '{"hello":"world"}'
     lex = Lexer(s)
     tl = lex.analyze()
     print(tl)
+    g = Grammar(tl)
+    tree = g.analyze()
+    print(tree)
 
     s = '[3.2,4,null,false]'
     lex = Lexer(s)
