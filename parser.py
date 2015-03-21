@@ -151,7 +151,7 @@ class Grammar(object):
                 raise Exception('unkonwn token {}'.format(lookahead))
         raise Exception('unkonwn token type {}'.format(type(lookahead)))
     def match(self, token):
-        print('match', self.lookahead(), token)
+        # print('match', self.lookahead(), token)
         if self.lookahead() == token:
             self.step()
         else:
@@ -184,22 +184,6 @@ class Grammar(object):
             return None
         return self.token_list[i]
 
-class JsonFormat(object):
-    """docstring for JsonFormat"""
-    def __init__(self, tree):
-        super(JsonFormat, self).__init__()
-        self.tree = tree
-    def __repr__(self):
-        return self.repr_value(self.tree)
-    def repr_value(self, value):
-        if isinstance(value, list):
-            return '[{}]'.format([self.repr_value(v) for v in value])
-        if isinstance(value, dict):
-            return '{{}}'.format([str(k)+':'+self.repr_value(v) for (k,v) in value.items()])
-        if isinstance(value, str):
-            return '"{}"'.format(value)
-        return str(value)
-
 if __name__ == '__main__':
     s = 'true'
     lex = Lexer(s)
@@ -217,7 +201,10 @@ if __name__ == '__main__':
     tree = g.analyze()
     print(tree)
 
-    # s = '[3.2,4,null,false]'
-    # lex = Lexer(s)
-    # tl = lex.analyze()
-    # print(tl)
+    s = '[3.2,4,null,false]'
+    lex = Lexer(s)
+    tl = lex.analyze()
+    print(tl)
+    g = Grammar(tl)
+    tree = g.analyze()
+    print(tree)
